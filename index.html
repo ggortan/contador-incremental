@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoga+</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .contador-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .btn-incrementar {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-indigo-50 font-sans">
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-4 shadow-md">
+        <h1 class="text-2xl font-bold text-center">Yoga+</h1>
+    </header>
+
+    <!-- Contador Principal -->
+    <main class="contador-container p-4">
+        <div class="flex justify-center items-center mb-2 relative">
+            <div id="contador" class="text-6xl font-bold text-indigo-800">0</div>
+            <button id="btn-redefinir" class="ml-3 text-indigo-600 hover:text-indigo-800 transition-colors absolute right-0">
+                <i class="fas fa-redo-alt text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Botão Grande para Incrementar -->
+        <button id="btn-incrementar" class="btn-incrementar bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-xl p-6 flex-grow flex items-center justify-center transition-colors shadow-lg mx-auto w-full my-4 max-w-md">
+            <i class="fas fa-plus text-6xl p-12"></i>
+        </button>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-indigo-600 text-white p-2 text-center text-sm">
+        Te amo &hearts;
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos
+            const contadorEl = document.getElementById('contador');
+            const btnIncrementar = document.getElementById('btn-incrementar');
+            const btnRedefinir = document.getElementById('btn-redefinir');
+            
+            // Recuperar valor do contador do localStorage
+            let contador = parseInt(localStorage.getItem('yogaContador')) || 0;
+            
+            // Atualizar contador na tela
+            function atualizarContador() {
+                contadorEl.textContent = contador;
+                localStorage.setItem('yogaContador', contador);
+            }
+            
+            // Inicializar contador
+            atualizarContador();
+            
+            // Evento de clique para incrementar
+            btnIncrementar.addEventListener('click', function() {
+                contador++;
+                atualizarContador();
+                
+                // Adicionar efeito visual
+                contadorEl.classList.add('text-indigo-500');
+                setTimeout(() => {
+                    contadorEl.classList.remove('text-indigo-500');
+                }, 150);
+            });
+            
+            // Evento de clique para redefinir
+            btnRedefinir.addEventListener('click', function() {
+                if (confirm('Deseja zerar o contador?')) {
+                    contador = 0;
+                    atualizarContador();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
