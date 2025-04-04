@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yoga+</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <!-- Tailwind CSS via CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
@@ -20,6 +22,46 @@
         .btn-incrementar {
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+        }
+        /* Toggle switch styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #6366F1;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
         }
     </style>
 </head>
@@ -42,6 +84,15 @@
         <button id="btn-incrementar" class="btn-incrementar bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-xl p-6 flex-grow flex items-center justify-center transition-colors shadow-lg mx-auto w-full my-4 max-w-md">
             <i class="fas fa-plus text-6xl p-12"></i>
         </button>
+
+        <!-- Toggle para Manter Tela Ligada -->
+        <div class="flex items-center justify-center mt-4">
+            <label class="switch mr-3">
+                <input type="checkbox" id="keepAwakeToggle">
+                <span class="slider"></span>
+            </label>
+            <span class="text-indigo-800 font-medium">Manter tela ligada</span>
+        </div>
     </main>
 
     <!-- Footer -->
@@ -55,6 +106,7 @@
             const contadorEl = document.getElementById('contador');
             const btnIncrementar = document.getElementById('btn-incrementar');
             const btnRedefinir = document.getElementById('btn-redefinir');
+            const keepAwakeToggle = document.getElementById('keepAwakeToggle');
             
             // Recuperar valor do contador do localStorage
             let contador = parseInt(localStorage.getItem('yogaContador')) || 0;
@@ -85,6 +137,71 @@
                 if (confirm('Deseja zerar o contador?')) {
                     contador = 0;
                     atualizarContador();
+                }
+            });
+
+            // Variáveis para controle de wake lock
+            let wakeLock = null;
+
+            // Função para solicitar o wake lock
+            async function requestWakeLock() {
+                try {
+                    // Tenta obter um wake lock
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock ativado!');
+                    
+                    // Adicionar listener para caso o wake lock seja liberado
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock foi liberado');
+                        wakeLock = null;
+                        // Se ainda estiver marcado, tentar reativar
+                        if (keepAwakeToggle.checked) {
+                            requestWakeLock();
+                        }
+                    });
+                } catch (err) {
+                    console.error(`Erro ao ativar Wake Lock: ${err.message}`);
+                    alert('Seu navegador não suporta manter a tela ligada ou a página não está em HTTPS');
+                    keepAwakeToggle.checked = false;
+                }
+            }
+
+            // Função para liberar o wake lock
+            function releaseWakeLock() {
+                if (wakeLock) {
+                    wakeLock.release()
+                        .then(() => {
+                            console.log('Wake Lock liberado');
+                            wakeLock = null;
+                        });
+                }
+            }
+
+            // Verificar o estado salvo do toggle
+            const keepScreenOn = localStorage.getItem('yogaKeepScreenOn') === 'true';
+            keepAwakeToggle.checked = keepScreenOn;
+            
+            // Se estiver ativado, solicitar wake lock
+            if (keepScreenOn && 'wakeLock' in navigator) {
+                requestWakeLock();
+            }
+
+            // Evento de alteração do toggle
+            keepAwakeToggle.addEventListener('change', function() {
+                const isChecked = this.checked;
+                localStorage.setItem('yogaKeepScreenOn', isChecked);
+                
+                if (isChecked && 'wakeLock' in navigator) {
+                    requestWakeLock();
+                } else {
+                    releaseWakeLock();
+                }
+            });
+
+            // Reativar o wake lock quando o documento volta a ficar visível
+            document.addEventListener('visibilitychange', () => {
+                if (keepAwakeToggle.checked && document.visibilityState === 'visible' && !wakeLock) {
+                    requestWakeLock();
                 }
             });
         });
