@@ -3,7 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yoga+</title>
+    <link rel="icon" href="favicon.ico" type="image/png">
+
+    <title>Yoga+ | Contador de Práticas</title>
+    
+    <meta property="og:title" content="Yoga+ | Contador de Práticas">
+    <meta property="og:description" content="Contador simples para suas práticas de yoga.">
+    <meta property="og:image" content="https://dev.gortan.com.br/yoga+/logo.png">
+    <meta property="og:url" content="https://dev.gortan.com.br/yoga+">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Yoga+ | Contador de Práticas">
+    <meta property="og:locale" content="pt_BR">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Yoga+ | Contador de Práticas">
+    <meta name="twitter:description" content="Contador simples para suas práticas de yoga.">
+    <meta name="twitter:image" content="logo.png">
+    
+    
     <!-- Tailwind CSS via CDN -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -58,47 +74,92 @@
             border-radius: 50%;
         }
         input:checked + .slider {
-            background-color: #6366F1;
+            background-color: #f472b6;
         }
         input:checked + .slider:before {
             transform: translateX(26px);
         }
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
-<body class="bg-indigo-50 font-sans">
+<body class="bg-pink-50 font-sans">
     <!-- Header -->
-    <header class="bg-indigo-600 text-white p-4 shadow-md">
+    <header class="bg-pink-400 text-white p-4 shadow-md">
         <h1 class="text-2xl font-bold text-center">Yoga+</h1>
     </header>
 
-    <!-- Contador Principal -->
     <main class="contador-container p-4">
         <div class="flex justify-center items-center mb-2 relative">
-            <div id="contador" class="text-6xl font-bold text-indigo-800">0</div>
-            <button id="btn-redefinir" class="ml-3 text-indigo-600 hover:text-indigo-800 transition-colors absolute right-0">
+            <div id="contador" class="text-6xl font-bold text-pink-800">0</div>
+            <button id="btn-redefinir" class="ml-3 text-pink-400 hover:text-pink-800 transition-colors absolute right-0">
                 <i class="fas fa-redo-alt text-xl"></i>
             </button>
         </div>
 
-        <!-- Botão Grande para Incrementar -->
-        <button id="btn-incrementar" class="btn-incrementar bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-xl p-6 flex-grow flex items-center justify-center transition-colors shadow-lg mx-auto w-full my-4 max-w-md">
+        <button id="btn-incrementar" class="btn-incrementar bg-pink-400 hover:bg-pink-300 active:bg-pink-500 text-white rounded-xl p-6 flex-grow flex items-center justify-center transition-colors shadow-lg mx-auto w-full my-4 max-w-md">
             <i class="fas fa-plus text-6xl p-12"></i>
         </button>
 
-        <!-- Toggle para Manter Tela Ligada -->
         <div class="flex items-center justify-center mt-4">
             <label class="switch mr-3">
                 <input type="checkbox" id="keepAwakeToggle">
                 <span class="slider"></span>
             </label>
-            <span class="text-indigo-800 font-medium">Manter tela ligada</span>
+            <span class="text-pink-800 font-medium">Manter tela ligada</span>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-indigo-600 text-white p-2 text-center text-sm">
-        Te amo &hearts;
+    <footer class="bg-pink-400 text-white p-2 text-center text-sm">
+        Criado com 🧡 para meu amor.
     </footer>
+
+    <div id="resetModal" class="modal-overlay">
+        <div class="bg-white rounded-lg shadow-xl p-6 mx-4 max-w-sm w-full">
+            <h3 class="text-lg font-semibold text-pink-800 mb-3">Zerar contador?</h3>
+            <p class="text-gray-600 mb-4">Tem certeza que deseja zerar o contador?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="cancelReset" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmReset" class="px-4 py-2 bg-pink-400 hover:bg-pink-700 text-white rounded-lg transition-colors">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para mensagens de erro -->
+    <div id="errorModal" class="modal-overlay">
+        <div class="bg-white rounded-lg shadow-xl p-6 mx-4 max-w-sm w-full">
+            <h3 class="text-lg font-semibold text-red-600 mb-3">Atenção</h3>
+            <p id="errorMessage" class="text-gray-600 mb-4"></p>
+            <div class="flex justify-end">
+                <button id="closeError" class="px-4 py-2 bg-pink-400 hover:bg-pink-700 text-white rounded-lg transition-colors">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -107,66 +168,97 @@
             const btnIncrementar = document.getElementById('btn-incrementar');
             const btnRedefinir = document.getElementById('btn-redefinir');
             const keepAwakeToggle = document.getElementById('keepAwakeToggle');
+            const resetModal = document.getElementById('resetModal');
+            const confirmReset = document.getElementById('confirmReset');
+            const cancelReset = document.getElementById('cancelReset');
+            const errorModal = document.getElementById('errorModal');
+            const errorMessage = document.getElementById('errorMessage');
+            const closeError = document.getElementById('closeError');
             
-            // Recuperar valor do contador do localStorage
             let contador = parseInt(localStorage.getItem('yogaContador')) || 0;
             
-            // Atualizar contador na tela
             function atualizarContador() {
                 contadorEl.textContent = contador;
                 localStorage.setItem('yogaContador', contador);
             }
             
-            // Inicializar contador
             atualizarContador();
             
-            // Evento de clique para incrementar
+            function showModal(modal) {
+                modal.classList.add('active');
+            }
+
+            function hideModal(modal) {
+                modal.classList.remove('active');
+            }
+
+            function showError(message) {
+                errorMessage.textContent = message;
+                showModal(errorModal);
+            }
+            
             btnIncrementar.addEventListener('click', function() {
                 contador++;
                 atualizarContador();
                 
-                // Adicionar efeito visual
-                contadorEl.classList.add('text-indigo-500');
+                contadorEl.classList.add('text-pink-500');
                 setTimeout(() => {
-                    contadorEl.classList.remove('text-indigo-500');
+                    contadorEl.classList.remove('text-pink-500');
                 }, 150);
             });
             
-            // Evento de clique para redefinir
             btnRedefinir.addEventListener('click', function() {
-                if (confirm('Deseja zerar o contador?')) {
-                    contador = 0;
-                    atualizarContador();
+                showModal(resetModal);
+            });
+
+            confirmReset.addEventListener('click', function() {
+                contador = 0;
+                atualizarContador();
+                hideModal(resetModal);
+            });
+
+            cancelReset.addEventListener('click', function() {
+                hideModal(resetModal);
+            });
+
+            closeError.addEventListener('click', function() {
+                hideModal(errorModal);
+            });
+
+            resetModal.addEventListener('click', function(e) {
+                if (e.target === resetModal) {
+                    hideModal(resetModal);
                 }
             });
 
-            // Variáveis para controle de wake lock
+            errorModal.addEventListener('click', function(e) {
+                if (e.target === errorModal) {
+                    hideModal(errorModal);
+                }
+            });
+
             let wakeLock = null;
 
-            // Função para solicitar o wake lock
             async function requestWakeLock() {
                 try {
                     // Tenta obter um wake lock
                     wakeLock = await navigator.wakeLock.request('screen');
                     console.log('Wake Lock ativado!');
                     
-                    // Adicionar listener para caso o wake lock seja liberado
                     wakeLock.addEventListener('release', () => {
                         console.log('Wake Lock foi liberado');
                         wakeLock = null;
-                        // Se ainda estiver marcado, tentar reativar
                         if (keepAwakeToggle.checked) {
                             requestWakeLock();
                         }
                     });
                 } catch (err) {
                     console.error(`Erro ao ativar Wake Lock: ${err.message}`);
-                    alert('Seu navegador não suporta manter a tela ligada ou a página não está em HTTPS');
+                    showError('Seu navegador não suporte manter a tela ligada.');
                     keepAwakeToggle.checked = false;
                 }
             }
 
-            // Função para liberar o wake lock
             function releaseWakeLock() {
                 if (wakeLock) {
                     wakeLock.release()
@@ -177,16 +269,13 @@
                 }
             }
 
-            // Verificar o estado salvo do toggle
             const keepScreenOn = localStorage.getItem('yogaKeepScreenOn') === 'true';
             keepAwakeToggle.checked = keepScreenOn;
             
-            // Se estiver ativado, solicitar wake lock
             if (keepScreenOn && 'wakeLock' in navigator) {
                 requestWakeLock();
             }
 
-            // Evento de alteração do toggle
             keepAwakeToggle.addEventListener('change', function() {
                 const isChecked = this.checked;
                 localStorage.setItem('yogaKeepScreenOn', isChecked);
@@ -198,7 +287,7 @@
                 }
             });
 
-            // Reativar o wake lock quando o documento volta a ficar visível
+            // Reativar o wake lock quando o documento volta a ficar vis���vel
             document.addEventListener('visibilitychange', () => {
                 if (keepAwakeToggle.checked && document.visibilityState === 'visible' && !wakeLock) {
                     requestWakeLock();
